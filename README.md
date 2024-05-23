@@ -5,7 +5,7 @@
 
 # Here's how I did it!
 Use Cheat Engine
-1.Link "Among Us.exe"
+1.Link "Among Us.exe" <br>
 2.Click on Mono in the toolbar up top -> Activate Mono Features
 Click on dissect mono - now you will see all the dll modules in the among us game
 Pick Assymbly-CSharp.dll
