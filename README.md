@@ -1,4 +1,4 @@
 # Among-Us-read-Player
-reads memory from Among us
+dont reads memory from Among Us = not undetectable
 
 ![x.PNG](x.PNG)
