@@ -21,7 +21,7 @@ class MemoryReader:
         self.update_names_flag = False
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
-        # Konfiguration des modernen Dunkelmodus-Themas
+        # Dunkelmodus-Thema
         self.style = ttk.Style()
         self.style.configure("TFrame", background="#333")
         self.style.configure("TLabel", background="#333", foreground="white", font=("Helvetica", 12))
@@ -80,19 +80,26 @@ class MemoryReader:
 
     # Funktion zur Bestimmung der Basisadresse
     def find_base_address(self):
-        pm = pymem.Pymem("Among Us.exe")
-        module = pymem.process.module_from_name(pm.process_handle, "GameAssembly.dll")
-        module_base_address = module.lpBaseOfDll
-        add_offset = pm.read_uint(module_base_address + 0x022F4F10)
-        add_offset = pm.read_uint(add_offset + 0x5C)
-        self.base_address = pm.read_uint(add_offset)
-        pm.close_process()
+        try:
+            pm = pymem.Pymem(self.process_name)
+            module = pymem.process.module_from_name(pm.process_handle, "GameAssembly.dll")
+            module_base_address = module.lpBaseOfDll
+            add_offset = pm.read_uint(module_base_address + 0x022F4F10)
+            add_offset = pm.read_uint(add_offset + 0x5C)
+            self.base_address = pm.read_uint(add_offset)
+            pm.close_process()
+        except pymem.exception.PymemError:
+            if pm:
+                pm.close_process()
+            self.base_address = None
 
     # Funktion zur Identifizierung der Impostors
     def find_impostors(self):
         players = []
+        if self.base_address is None:
+            return players
         try:
-            pm = pymem.Pymem("Among Us.exe")
+            pm = pymem.Pymem(self.process_name)
             allclients_ptr = pm.read_uint(self.base_address + 0x60)
             items_ptr = pm.read_uint(allclients_ptr + 0x8)
             items_count = pm.read_uint(allclients_ptr + 0xC)
@@ -105,8 +112,6 @@ class MemoryReader:
                 role_name = self.roles.get(item_role, "Dead")
 
                 item_color_id = pm.read_uint(item_base + 0x28)
-
-                coordinates = (0, 0, item_color_id)  # Koordinaten sind nicht mehr benötigt
                 item_name_ptr = pm.read_uint(item_base + 0x1C)
                 item_name_length = pm.read_uint(item_name_ptr + 0x8)
                 item_name_address = item_name_ptr + 0xC
@@ -114,12 +119,12 @@ class MemoryReader:
                 item_name = raw_name_bytes.decode('utf-16').rstrip('\x00')
 
                 player_details = f"{item_name:10} | {self.colornames[item_color_id]:7} | "
-                players.append((player_details, role_name, coordinates))
+                players.append((player_details, role_name, item_color_id))
             pm.close_process()
-            return players
-        except pymem.exception.PymemError as e:
-            pm.close_process()
-            return players
+        except pymem.exception.PymemError:
+            if pm:
+                pm.close_process()
+        return players
 
     # Funktion zum Lesen des Speichers
     def read_memory(self):
@@ -127,8 +132,8 @@ class MemoryReader:
         players = self.find_impostors()
 
         if self.update_names_flag:
-            self.output_text.delete('1.0', tk.END)  # Bestehenden Text löschen
-            for player_details, role_name, (playerx, playery, playercolor) in players:
+            self.output_text.delete('1.0', tk.END)
+            for player_details, role_name, playercolor in players:
                 if role_name in ["Shapeshifter", "Impostor"]:
                     self.output_text.insert(tk.END, f"{player_details}", self.colornames[playercolor])
                     self.output_text.insert(tk.END, f"{role_name}\n", 'imp')
@@ -156,13 +161,11 @@ class MemoryReader:
     # Funktion zur automatischen Aktualisierung der Namen
     def auto_update_names(self):
         while self.auto_update_flag.is_set():
-            start_time = time.time()  # Startzeit erfassen
-
+            start_time = time.time()
             self.update_names()
-
-            elapsed_time = time.time() - start_time  # Vergangene Zeit seit dem Start erfassen
+            elapsed_time = time.time() - start_time
             if elapsed_time < self.auto_update_interval.get():
-                time.sleep(self.auto_update_interval.get() - elapsed_time)
+                time.sleep(max(0, self.auto_update_interval.get() - elapsed_time))
 
     # Funktion zum Schließen des Fensters
     def on_close(self):
