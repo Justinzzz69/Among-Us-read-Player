@@ -1,3 +1,4 @@
+bruh not working idk why
 # Among-Us-read-Player
 ## Undetectable among us Cheat!
 How to use it: 0: Close || 1: Read Players || 2:Radar-ON || 3:Radar-OFF || 9: PANIC! (delete)
