@@ -1,8 +1,7 @@
 # Among-Us-read-Player
 ## Undetectable among us Cheat!
-![x.PNG](x.PNG)
-![x.PNG](1.PNG)
-![x.PNG](2.PNG)
+![1.PNG](1.PNG)
+![2.PNG](2.PNG)
 
 
 # Here's how I did it!
